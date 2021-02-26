@@ -184,11 +184,13 @@ public class RobotContainer {
         .whenInactive(new PrintCommand("Button A Released"));
 
     // Setup SmartDashboard options
+    /*
     m_chooser.setDefaultOption("Ramsete Trajectory", generateRamseteCommand("foo"));
     m_chooser.addOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
     m_chooser.addOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
     
     SmartDashboard.putData(m_chooser);
+    */
   }
 
   /**
@@ -197,8 +199,14 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return new SequentialCommandGroup(generateRamseteCommand("Test"), generateRamseteCommand("Yeet"), generateRamseteCommand("Blue"), generateRamseteCommand("Finish"));
+    return new SequentialCommandGroup(
+      generateRamseteCommand("Yellow"), 
+      generateRamseteCommand("Yeet"), 
+      generateRamseteCommand("Blue"), 
+      generateRamseteCommand("Finish")
+    );
     //return m_chooser.getSelected();
+    //Part of smart dashboard --> to choose what you want to run
   }
 
   /**
@@ -208,6 +216,7 @@ public class RobotContainer {
    */
   public Command getArcadeDriveCommand() {
     return new ArcadeDrive(
-        m_drivetrain, () -> -m_controller.getRawAxis(1), () -> m_controller.getRawAxis(2));
+        m_drivetrain, () -> 0.8*-m_controller.getRawAxis(1), () -> 0.8*m_controller.getRawAxis(4));
+        //*0.5 means that it only goes 50% of capacity
   }
 }
