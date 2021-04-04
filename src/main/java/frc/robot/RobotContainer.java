@@ -47,7 +47,6 @@ import edu.wpi.first.wpilibj2.command.button.Button;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and button mappings) should be declared here.
  */
-//Testing my commit
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final Drivetrain m_drivetrain = new Drivetrain();
@@ -86,7 +85,6 @@ public class RobotContainer {
    * @return A SequentialCommand that sets up and executes a trajectory following Ramsete command
    */
   private Command generateRamseteCommand(String filename) {
-    //ensure that only go up to max speed
     var autoVoltageConstraint =
         new DifferentialDriveVoltageConstraint(
             new SimpleMotorFeedforward(DriveConstants.ksVolts, 
@@ -101,69 +99,41 @@ public class RobotContainer {
             .setKinematics(DriveConstants.kDriveKinematics)
             .addConstraint(autoVoltageConstraint);
 
-    // This trajectory can be modified to suit your purposes
-    // Note that all coordinates are in meters, and follow NWU conventions.
-    // If you would like to specify coordinates in inches (which might be easier
-    // to deal with for the Romi), you can use the Units.inchesToMeters() method
-    /*
-    //Generates tragectory
-    Trajectory exampleTrajectory = TrajectoryGenerator.generateTrajectory(
-        // Start at the origin facing the +X direction
-        //Pass in start position
-        new Pose2d(0, 0, new Rotation2d(0)),
-        //Pass in list of translations (= specific points in trajectory)
-        //Specific points = start, end, "waypoints" (points along path)
-        //Computer generates trajectory based on specific points inputted in
-        //Direction robot is driving in = x axis; perpendicular = y axis
-        List.of(
-            new Translation2d(0.5, 0.25),
-            new Translation2d(1.0, -0.25),
-            new Translation2d(1.5, 0)
-        ),
-        //End position
-        new Pose2d(0.0, 0, new Rotation2d(Math.PI)),
-        config);
-    */
+    String trajectoryJSON = filename + ".wpilib.json";
 
-    //Path to correct JSON file
+    try{
+      Path trajectoryPath = Filesystem.getDeployDirectory().toPath().resolve(trajectoryJSON);
+      Trajectory exampleTrajectory = TrajectoryUtil.fromPathweaverJson(trajectoryPath);
+
+      RamseteCommand ramseteCommand = new RamseteCommand(
+        exampleTrajectory,
+        m_drivetrain::getPose,
+        new RamseteController(AutoConstants.kRamseteB, AutoConstants.kRamseteZeta),
+        new SimpleMotorFeedforward(DriveConstants.ksVolts, DriveConstants.kvVoltSecondsPerMeter, DriveConstants.kaVoltSecondsSquaredPerMeter),
+        DriveConstants.kDriveKinematics,
+        m_drivetrain::getWheelSpeeds,
+        new PIDController(DriveConstants.kPDriveVel, 0, 0),
+        new PIDController(DriveConstants.kPDriveVel, 0, 0),
+        m_drivetrain::tankDriveVolts,
+        m_drivetrain);
+
+      m_drivetrain.resetOdometry(exampleTrajectory.getInitialPose());
+
+      // Set up a sequence of commands
+      // First, we want to reset the drivetrain odometry
+      return new InstantCommand(() -> m_drivetrain.resetOdometry(exampleTrajectory.getInitialPose()), m_drivetrain)
+          // next, we run the actual ramsete command
+          .andThen(ramseteCommand)
+
+          // Finally, we make sure that the robot stops
+          .andThen(new InstantCommand(() -> m_drivetrain.tankDriveVolts(0, 0), m_drivetrain));
     
-      String trajectoryJSON = filename+".wpilib.json";
+    } catch(IOException ex){
+      DriverStation.reportError("Unable to open trajectory: "+trajectoryJSON, ex.getStackTrace());
+    }
 
-      try {
-        Path trajectoryPath = Filesystem.getDeployDirectory().toPath().resolve(trajectoryJSON);
-        Trajectory exampleTrajectory = TrajectoryUtil.fromPathweaverJson(trajectoryPath);
-  
-        RamseteCommand ramseteCommand = new RamseteCommand(
-          exampleTrajectory,
-          m_drivetrain::getPose,
-          new RamseteController(AutoConstants.kRamseteB, AutoConstants.kRamseteZeta),
-          new SimpleMotorFeedforward(DriveConstants.ksVolts, DriveConstants.kvVoltSecondsPerMeter, DriveConstants.kaVoltSecondsSquaredPerMeter),
-          DriveConstants.kDriveKinematics,
-          m_drivetrain::getWheelSpeeds,
-          new PIDController(DriveConstants.kPDriveVel, 0, 0),
-          new PIDController(DriveConstants.kPDriveVel, 0, 0),
-          m_drivetrain::tankDriveVolts,
-          m_drivetrain);
-  
-        m_drivetrain.resetOdometry(exampleTrajectory.getInitialPose());
-  
-        // Set up a sequence of commands
-        // First, we want to reset the drivetrain odometry
-        return new InstantCommand(() -> m_drivetrain.resetOdometry(exampleTrajectory.getInitialPose()), m_drivetrain)
-            // next, we run the actual ramsete command
-            .andThen(ramseteCommand)
-  
-            // Finally, we make sure that the robot stops
-            .andThen(new InstantCommand(() -> m_drivetrain.tankDriveVolts(0, 0), m_drivetrain));
-  
-      } catch (IOException ex) {
-        DriverStation.reportError("Unable to open trajectory: " + trajectoryJSON, ex.getStackTrace());
-      }
-
-    //In case the try block doesn't run
-    //so that the function still returns something, even if try doesn't run
     return null;
-    
+
   } 
 
   /**
@@ -184,13 +154,8 @@ public class RobotContainer {
         .whenInactive(new PrintCommand("Button A Released"));
 
     // Setup SmartDashboard options
-    /*
-    m_chooser.setDefaultOption("Ramsete Trajectory", generateRamseteCommand("foo"));
-    m_chooser.addOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
-    m_chooser.addOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
     
     SmartDashboard.putData(m_chooser);
-    */
   }
 
   /**
@@ -200,13 +165,10 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     return new SequentialCommandGroup(
-      generateRamseteCommand("Yellow"), 
-      generateRamseteCommand("Yeet"), 
-      generateRamseteCommand("Blue"), 
-      generateRamseteCommand("Finish")
-    );
-    //return m_chooser.getSelected();
-    //Part of smart dashboard --> to choose what you want to run
+      generateRamseteCommand("Loop"),
+      generateRamseteCommand("secLoop"),
+      generateRamseteCommand("tresLoop"));
+    
   }
 
   /**
@@ -216,7 +178,6 @@ public class RobotContainer {
    */
   public Command getArcadeDriveCommand() {
     return new ArcadeDrive(
-        m_drivetrain, () -> 0.8*-m_controller.getRawAxis(1), () -> 0.8*m_controller.getRawAxis(4));
-        //*0.5 means that it only goes 50% of capacity
+        m_drivetrain, () -> -m_controller.getRawAxis(1), () -> m_controller.getRawAxis(2));
   }
 }

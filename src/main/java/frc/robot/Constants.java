@@ -21,25 +21,17 @@ public final class Constants {
     public static final double ksVolts = 1.43;
     public static final double kvVoltSecondsPerMeter = 5.47;
     public static final double kaVoltSecondsSquaredPerMeter = 0.00894;
-    //For electricity (num volts go in)
 
-    public static final double kPDriveVel = 0.085;
-    //P constant of PID loop
-    //difference between target point and current point = error
-    //P constant = proportional = number multiplied by error to get dif number
-    //Larger error = larger P
+    public static final double kPDriveVel = 0.2;
 
     public static final double kTrackwidthMeters = 0.142072613;
-    //Width of Romi in meters
     public static final DifferentialDriveKinematics kDriveKinematics =
         new DifferentialDriveKinematics(kTrackwidthMeters);
   }
 
   public static final class AutoConstants {
-    //Max Velocity
     public static final double kMaxSpeedMetersPerSecond = 0.8;
     public static final double kMaxAccelerationMetersPerSecondSquared = 0.8;
-    //Adjusts speed of how fast want Romi to move
 
     // Reasonable baseline values for a RAMSETE follower in units of meters and seconds
     public static final double kRamseteB = 2;
